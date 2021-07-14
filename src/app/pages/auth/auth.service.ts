@@ -1,10 +1,11 @@
-import { User, UserResponse } from '@shared/models/user.interface';
+import { User, UserResponse, Roles } from '@shared/models/user.interface';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from '@env/environment';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators'
 import { JwtHelperService } from '@auth0/angular-jwt';
+import { Router } from '@angular/router';
 
 const helper = new JwtHelperService();
 @Injectable({
@@ -12,9 +13,11 @@ const helper = new JwtHelperService();
 })
 export class AuthService {
 
-  public loggedIn = new BehaviorSubject<boolean>(false);
+  private loggedIn = new BehaviorSubject<boolean>(false);
+  private role = new BehaviorSubject<Roles | null>(null);
 
-  constructor( private http: HttpClient) {
+  constructor( private http: HttpClient,
+               private router: Router) {
 
     this.checkToken();
 
@@ -24,6 +27,10 @@ export class AuthService {
     return this.loggedIn.asObservable();
   }
 
+  get isAdmin$(): Observable<string | null> {
+    return this.role.asObservable();
+  }
+
   login(authData: User): Observable<UserResponse | void> {
 
   return this.http.post<UserResponse>(
@@ -31,8 +38,9 @@ export class AuthService {
     authData
     ).pipe(
       map( (res: UserResponse) => {
-        this.saveToken(res.token);
+        this.saveLocalStorage(res);
         this.loggedIn.next(true);
+        this.role.next(res.role);
         return res;
       }),
       catchError( (err) => this.handlerError(err))
@@ -42,22 +50,34 @@ export class AuthService {
 
   logout(): void {
 
-    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     this.loggedIn.next(false);
+    this.role.next(null);
+    this.router.navigate(['/login'])
 
   }
 
   private checkToken(): void {
 
-    const userToken = localStorage.getItem('token');
-    const isExpired = helper.isTokenExpired(userToken || undefined);
-    isExpired ? this.logout() : this.loggedIn.next(true);
+    const user = JSON.parse(localStorage.getItem('user') || "{}");
+
+    if (user) {
+      const isExpired = helper.isTokenExpired(user.token);
+
+      if (isExpired) {
+        this.logout();
+      } else {
+        this.loggedIn.next(true);
+        this.role.next(user.role);
+      }
+    }
 
   }
 
-  private saveToken(token: string): void {
+  private saveLocalStorage(user: UserResponse): void {
 
-    localStorage.setItem('token', token);
+    const { userId, message, ...rest } = user;
+    localStorage.setItem('user', JSON.stringify(rest));
 
   }
 
@@ -67,7 +87,6 @@ export class AuthService {
     if (err) {
       errorMessage = `Error: code ${err.message}`;
     }
-    // window.alert(errorMessage);
     return throwError(errorMessage);
 
   }
