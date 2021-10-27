@@ -16,7 +16,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   private subscription: Subscription = new Subscription();
 
   loginForm = this.fb.group({
-    username: ['', [Validators.required, Validators.pattern(this.isValidEmail)]],
+    email: ['', [Validators.required, Validators.pattern(this.isValidEmail)]],
     password: ['', [Validators.required, Validators.minLength(5)]]
   });
 
@@ -25,13 +25,6 @@ export class LoginComponent implements OnInit, OnDestroy {
                private router: Router ) { }
 
   ngOnInit(): void {
-
-    // const userData = {
-    //   username: "niamesvi3@gmail.com",
-    //   password: "123456"
-    // }
-
-    // this.authService.login(userData).subscribe((res) => console.log( 'Login' ));
 
   }
 

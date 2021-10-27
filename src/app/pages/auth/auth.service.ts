@@ -1,5 +1,5 @@
 import { User, UserResponse, Roles } from '@shared/models/user.interface';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from '@env/environment';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
@@ -33,17 +33,24 @@ export class AuthService {
 
   login(authData: User): Observable<UserResponse | void> {
 
-  return this.http.post<UserResponse>(
-    `${environment.API_URL}/prod/api/v1/auth`,
-    authData
-    ).pipe(
-      map( (res: UserResponse) => {
-        this.saveLocalStorage(res);
-        this.loggedIn.next(true);
-        this.role.next(res.role);
-        return res;
-      }),
-      catchError( (err) => this.handlerError(err))
+    const httpOptions = {
+      headers: new HttpHeaders({
+        'X-Api-Key': environment.API_KEY
+      })
+    };
+
+    return this.http.post<UserResponse>(
+      `${environment.API_URL}/prod/api/v1/auth/login`,
+      authData,
+      httpOptions
+      ).pipe(
+        map( (res: UserResponse) => {
+          this.saveLocalStorage(res);
+          this.loggedIn.next(true);
+          this.role.next(res.role);
+          return res;
+        }),
+        catchError( (err) => this.handlerError(err))
     );
 
   }
@@ -76,7 +83,7 @@ export class AuthService {
 
   private saveLocalStorage(user: UserResponse): void {
 
-    const { userId, message, ...rest } = user;
+    const { ...rest } = user;
     localStorage.setItem('user', JSON.stringify(rest));
 
   }

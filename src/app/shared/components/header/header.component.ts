@@ -1,3 +1,4 @@
+import { UtilsService } from './../../service/utils.service';
 import { Component, OnInit, Output, EventEmitter, OnDestroy } from '@angular/core';
 import { AuthService } from '@app/pages/auth/auth.service';
 import { Subject } from 'rxjs';
@@ -17,7 +18,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   @Output() toggleSidenav = new EventEmitter<void>();
 
-  constructor( private authService: AuthService) { }
+  constructor( private authService: AuthService,
+               private utilsService: UtilsService) { }
 
   ngOnInit(): void {
 
@@ -42,12 +44,15 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   onToggleSidenav(): void {
+
     this.toggleSidenav.emit();
+
   }
 
   onLogout(): void {
 
     this.authService.logout();
+    this.utilsService.openSidebar(false);
 
   }
 
